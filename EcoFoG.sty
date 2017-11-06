@@ -1,0 +1,361 @@
+\NeedsTeXFormat{LaTeX2e}
+
+\ProvidesPackage{EcoFoG}[2017/10/30 Modèle de rapport EcoFoG, v.1.11]
+
+
+% Based on memoir, style companion
+\newcommand{\MemoirChapStyle}{companion}
+	%also: default, section, hangnum, companion, article, reparticle
+	%also: bianchi, brighthurst, brotherton, chappell, crosshead, culver, 
+	%also: dash, demo2, demo3, dowdingell, ell, ger, komalke, lyhne, madsen
+	%also: ntglike, pederson, southall, tandh, thatcher, veelo, verville, 
+	%also: wilsondob
+\newcommand{\MemoirPageStyle}{companion}
+	%also: empty, plain, headings, myheadings, ruled, Ruled, simple
+
+
+%%% PACKAGES 
+%%%------------------------------------------------------------------------------
+
+\RequirePackage{ifthen}
+
+% Increase the number of floats
+\RequirePackage{etex}
+	\reserveinserts{150}
+\RequirePackage[maxfloats=60]{morefloats}
+
+% Space between paragraphs
+	\abnormalparskip{3pt}
+% Space in lists
+\RequirePackage{enumitem} 
+	\setlist[itemize]{noitemsep,nolistsep}
+	\setlist[enumerate]{noitemsep,nolistsep}
+
+% Allow more space between words to avoid overfull boxes
+	\tolerance=500                % default 200
+
+\RequirePackage{marginfix}      % Adjust margin paragraphs vertical position
+
+% International fonts
+\RequirePackage[utf8]{inputenc}
+\RequirePackage[T1]{fontenc}
+\RequirePackage{lmodern}
+\RequirePackage{microtype}      % Letter spacing
+
+\RequirePackage[french, english]{babel}	% http://en.wikibooks.org/wiki/LaTeX/Internationalization#French
+\RequirePackage{lettrine}       % Lettrine
+\RequirePackage{siunitx}        % units, e.g. \SI{5}{\kilo\meter}
+\RequirePackage{nth}            % English numbers, e.g. \nth{1} yields 1st (French: \ieme{} is included in babel)
+
+
+% Bibliography
+\RequirePackage[
+	backend=bibtex,
+	hyperref=true,
+	isbn=false,
+	backref=true,
+	bibstyle=authoryear-ibid,
+	citestyle=verbose-inote, pageref=true,
+	giveninits=true,
+	uniquename=init,
+	maxcitenames=2,
+	maxbibnames=150,
+	sorting=nyt,
+	sortcites=false
+]{biblatex}
+\RequirePackage[strict,autostyle]{csquotes}
+% Repeated citation as author-year-title instead of author-title (modification of footcite:note in verbose-inote.cbx)
+\renewbibmacro*{footcite:note}{%
+	\ifnameundef{labelname}
+		{\printfield{label}}
+		{\printnames{labelname}}
+	\setunit*{\nameyeardelim}
+	\iffieldundef{labelyear}
+		{}
+		{\printtext[parens]{\printfield{labelyear}\printfield{extrayear}}.}
+	\ifsamepage{\the\value{instcount}}{\csuse{cbx@f@\thefield{entrykey}}}
+		{}
+		{\setunit*{\nametitledelim} \printfield[title]{labeltitle}}
+	\setunit*{\addcomma\space}
+	\printtext{
+		\bibstring{seenote}\addnbspace
+		\ref{cbx@\csuse{cbx@f@\thefield{entrykey}}}
+		\iftoggle{cbx:pageref}
+		{
+			\ifsamepage{\the\value{instcount}}	{\csuse{cbx@f@\thefield{entrykey}}}
+			{}
+			{\addcomma\space\bibstring{page}\addnbspace
+			\pageref{cbx@\csuse{cbx@f@\thefield{entrykey}}}
+			}
+		}
+		{}
+	}
+}
+% Normal text in citations, to allow \textcite
+\AtEveryCite{\renewcommand*{\mkbibnamefamily}[1]{\textnormal{#1}}}
+% Add url's to computer softfware and @Misc in general, delete it in other cases
+% in citations...
+\AtEveryCitekey{%
+  \ifentrytype{misc}{%
+  }{%
+  \clearfield{url}%
+  \clearfield{urldate}%
+  }%
+}
+% ... and in bibliography
+\AtEveryBibitem{%
+  \ifentrytype{misc}{%
+  }{%
+  \clearfield{url}%
+  \clearfield{urldate}%
+}%
+}
+
+% Math
+\RequirePackage{amsmath,amsfonts,amssymb,mathtools,isomath,nicefrac}
+
+% Figures
+\RequirePackage{graphicx}
+	\graphicspath{{graphics/}}
+\RequirePackage{epstopdf}
+\RequirePackage{needspace}                                % Full-width figures
+\RequirePackage[config, font=scriptsize]{caption,subfig}  % Subfigures
+
+% Tables
+\RequirePackage{multirow}                                 % Merge table lines
+
+% Text blocks
+\RequirePackage[absolute,overlay]{textpos} 
+	\setlength{\TPHorizModule}{1mm}
+	\setlength{\TPVertModule}{1mm}
+% Frames
+\usepackage[tikz]{bclogo}
+
+% French typography: short toc in front matter, TOC in back matter.
+\RequirePackage[tight]{shorttoc}
+
+% Internal hyperlinks
+\RequirePackage{hyperref}
+\hypersetup{
+	pdfborder={0 0 0}         % No borders around internal hyperlinks
+}
+\RequirePackage{memhfixc}   % Necessary for memoir + hyperref
+
+% PDF pages insertion
+\RequirePackage{pdfpages}
+
+
+
+%%% PAGE LAYOUT 
+%%%------------------------------------------------------------------------------
+
+% Full-width figures utilities
+\newlength\widthw % full width
+\setlength{\widthw}{\textwidth+\marginparsep+\marginparwidth} % must be calculated again if page layout is changed
+\newlength{\rf}
+\newcommand*{\definesHSpace}{
+	\strictpagecheck % slower but efficient detection of odd/even pages
+	\checkoddpage
+	\ifoddpage
+		\setlength{\rf}{0mm}
+	\else
+		\setlength{\rf}{\marginparsep+\marginparwidth}
+	\fi
+}
+
+% figureFW: full-width figure. 4 arguments : [position] {label} {caption} {figure, i.e. \includegraphics...)
+\newcommand{\figureFW} [4] [tbp] {
+	\begin{figure}[#1]
+	\setbox0=\hbox{
+		\begin{minipage}[h]{\widthw}
+			\centering
+			#4
+		\end{minipage}
+	}
+	\needspace{\ht0+\dp0+2\baselineskip} % require the necessary space before calling \checkoddpage
+	\definesHSpace
+	\hspace{-\rf}
+	\box0
+	\caption{#3}\label{#2}
+	\end{figure}
+}
+
+% figureSC: side-caption figure. 4 arguments : [position] {label} {caption} {figure, i.e. \includegraphics...)
+\newcommand{\figureSC} [4] [htbp] {
+\strictpagecheck
+\begin{figure}[#1]
+	\begin{sidecaption}
+		{#3}
+		[#2]
+		\centering
+		#4
+	\end{sidecaption}
+\end{figure}
+}
+
+%figureMargin : margin figure, 4 arguments : [length (ignored)] {label} {caption} {figure, i.e. \includegraphics...)
+\newcommand{\figureMargin} [4] [1cm] {
+\begin{marginfigure}[#1]
+	\centering
+	#4
+	\caption{#3}
+	\label{#2}
+\end{marginfigure}
+}
+
+
+% tableFW: full-width table. 4 arguments : [position] {label} {caption} {content, i.e. \tabularx...)
+\newcommand{\tableFW} [4] [tbp] {
+	\begin{table}[#1]
+	\setbox0=\hbox{
+		\begin{minipage}[h]{\widthw}
+			\centering
+			\small
+			#4
+		\end{minipage}
+	}
+	\needspace{\ht0+\dp0+2\baselineskip} % require the necessary space before calling \checkoddpage
+	\caption{#3}
+	\definesHSpace
+	\hspace{-\rf}
+	\box0
+	\label{#2}
+	\end{table}
+}
+
+% tableSC: side-caption table. 4 arguments : [position] {label} {caption} {content, i.e. \tabularx...)
+\newcommand{\tableSC} [4] [htbp] {
+\strictpagecheck
+\begin{table}[#1]
+	\begin{sidecaption}
+		{#3}
+		[#2]
+		\centering
+		\small
+		#4
+	\end{sidecaption}
+\end{table}
+}
+
+%tableMargin : margin table, 4 arguments : [length (ignored)] {label} {caption} {figure, i.e. \includegraphics...)
+\newcommand{\tableMargin} [4] [1cm] {
+\begin{margintable}[#1]
+	\label{#2}
+	\caption{#3}
+	\centering
+	\small
+	#4
+\end{margintable}
+}
+
+
+% 1" margins for the front matter.
+\newcommand*{\SmallMargins}{
+	\setlrmarginsandblock{1in}{1in}{*}
+	\setmarginnotes{0.1in}{0.1in}{0.1in}
+	\setulmarginsandblock{1.5in}{1in}{*}
+	\checkandfixthelayout
+	\ch@ngetext
+	\clearpage
+	\setlength{\widthw}{\textwidth+\marginparsep+\marginparwidth}
+	\footnotesatfoot
+	\chapterstyle{\MemoirChapStyle}	% Chapter and page styles must be recalled
+	\pagestyle{\MemoirPageStyle} 
+}
+
+% 3" outer margin for the main matter
+\newcommand*{\LargeMargins}{
+	\setlrmarginsandblock{1in}{3in}{*}
+	\setmarginnotes{0.2in}{1.8in}{0.1in}
+	\setsidecaps{0.2in}{1.8in}
+	\setulmarginsandblock{1.5in}{1in}{*}
+	\checkandfixthelayout
+	\ch@ngetext
+	\clearpage
+	\setlength{\widthw}{\textwidth+\marginparsep+\marginparwidth}
+	\footnotesinmargin
+	\chapterstyle{\MemoirChapStyle}	% Chapter and page styles must be recalled
+	\pagestyle{\MemoirPageStyle} 
+}
+
+% Figure captions and footnotes in outer margins
+\sidecapmargin{outer}
+
+% Font size of side captions and side notes
+\captionnamefont{\scriptsize}	% ignored if subfig is used
+\captiontitlefont{\scriptsize}	% ignored if subfig is used
+\renewcommand{\footnotesize}{\tiny}
+
+
+%%% SECTIONAL DIVISIONS
+%%%------------------------------------------------------------------------------
+
+\maxsecnumdepth{subsection} % Subsections (and higher) are numbered
+\setsecnumdepth{subsection}
+
+
+
+
+%%% NEW COMMANDS
+%%%------------------------------------------------------------------------------
+
+% Title page and its back
+\newcommand{\MainTitlePage}[1][]{
+	\SmallMargins % Margins
+	\pagestyle{empty} % No header/footer
+	~\\ % Print a character or the page will not exist
+	\begin{textblock}{2}(30,10)
+		\rule{1pt}{\paperheight-20mm}
+	\end{textblock} 
+	\begin{textblock}{140}(50, 45)
+		\flushright 
+		\begin{Spacing}{3}
+			{\fontfamily{qtm}\selectfont\fontsize{45}{45}\selectfont \bsc{\thetitle}}
+		\end{Spacing}
+	\end{textblock}
+	\begin{textblock}{140}(50, 125)
+		\flushright 
+		{\fontfamily{qtm}\Large \theauthor}
+	\end{textblock} 
+	\begin{textblock}{120}[1, 1](225, 297)
+		\includegraphics[width=10cm]{Filigrane}
+	 \end{textblock} 
+	\begin{textblock}{140}[0, 1](40, 282)
+		\normalfont	Version: \thedate
+	\end{textblock} 
+	\newpage
+	~\\ % Print a character or the page will not exist
+	\begin{textblock}{140}(40, 40)
+		#1
+	\end{textblock}
+	\begin{textblock}{140}[0,1](40, 270)
+		\centering
+    \includegraphics[width=5cm]{EcoFoG2017}\\ \bigskip
+		UMR \'Ecologie des forêts de Guyane\\
+		\url{http://www.ecofog.gf}\\[3\baselineskip]
+		Les opinions émises par les auteurs sont personnelles et n’engagent ni l’UMR EcoFoG ni ses tutelles.
+    
+    \tiny{Photographie en couverture: Hadrien Lalagüe}
+	\end{textblock}
+	\newpage
+}
+
+% Clear page and open an even one (\clearpage opens an odd one)
+\newcommand{\evenpage}{
+  \clearpage
+	\strictpagecheck % slower but efficient detection of odd/even pages
+  \checkoddpage
+  \ifoddpage
+    \thispagestyle{empty}
+    ~\\ % Print a character or the page will not exist
+    \newpage
+  \else
+    % do nothing
+  \fi
+}
+
+
+% code command
+\newcommand{\code}[1]{\begingroup \ttfamily #1\endgroup}
+% Variance
+\def\Var{\mathop{\mathrm{Var}}}
