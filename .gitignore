@@ -1,0 +1,8 @@
+*-blx.bib
+*.aux
+*.log
+*.out
+*.run.xml
+*.toc
+*-eps-converted-to.pdf
+
