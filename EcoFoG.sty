@@ -46,7 +46,7 @@
 \RequirePackage{lettrine}       % Lettrine
 \RequirePackage{siunitx}        % units, e.g. \SI{5}{\kilo\meter}
 \RequirePackage{nth}            % English numbers, e.g. \nth{1} yields 1st (French: \ieme{} is included in babel)
-
+\RequirePackage{xspace}         % not to eat spaces
 
 % Bibliography
 \RequirePackage[
@@ -356,6 +356,6 @@
 
 
 % code command
-\newcommand{\code}[1]{\begingroup \ttfamily #1\endgroup}
+\newcommand{\code}[1]{\begingroup \ttfamily #1\endgroup\xspace}
 % Variance
 \def\Var{\mathop{\mathrm{Var}}}
