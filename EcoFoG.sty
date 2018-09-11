@@ -1,6 +1,6 @@
 \NeedsTeXFormat{LaTeX2e}
 
-\ProvidesPackage{EcoFoG}[2017/10/30 Modèle de rapport EcoFoG, v.1.11]
+\ProvidesPackage{EcoFoG}[2018/09/10 Modèle de rapport EcoFoG, v.1.12]
 
 
 % Based on memoir, style companion
@@ -50,7 +50,7 @@
 
 % Bibliography
 \RequirePackage[
-	backend=bibtex,
+	backend=biber,
 	hyperref=true,
 	isbn=false,
 	backref=true,
@@ -72,7 +72,7 @@
 	\setunit*{\nameyeardelim}
 	\iffieldundef{labelyear}
 		{}
-		{\printtext[parens]{\printfield{labelyear}\printfield{extrayear}}.}
+		{\printtext[parens]{\printfield{labelyear}\printfield{userb}}.}
 	\ifsamepage{\the\value{instcount}}{\csuse{cbx@f@\thefield{entrykey}}}
 		{}
 		{\setunit*{\nametitledelim} \printfield[title]{labeltitle}}
